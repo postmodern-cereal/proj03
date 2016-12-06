@@ -14,13 +14,16 @@
 
 main(int argc, char *argv[])
 {
+    //timeslice is length of program
+    int timeSlice = 20;
     int i = 0;
     PC = 0;
     //must set PC to 0 because headers are bitching
     //if queue empty then we reached a deadlock
     //step 1: read files into memory
     struct PCB *Current, *tmp;
-
+    Doorman = (semaphore *) malloc (sizeof (semaphore));
+    Doorman->count = 4;
     for(i = 0; i < 5; i++)
     {
         Forks[i] = (semaphore *) malloc (sizeof (semaphore));
@@ -30,14 +33,14 @@ main(int argc, char *argv[])
 
     RQ = (struct PCB *) malloc (sizeof (struct PCB));
     RQ->PID = 0;
-    RQ->IC = 9;
+    RQ->IC = timeSlice;
     tmp = RQ;
 
     for(i = 1; i < 5; i++)
     {
         tmp->Next_PCB = (struct PCB *) malloc (sizeof (struct PCB));
         tmp->Next_PCB->PID = i;
-        tmp->Next_PCB->IC = 9; //(rand() % 10) + 1; //rand returns 0 .. MAX
+        tmp->Next_PCB->IC = timeSlice; //(rand() % 10) + 1; //rand returns 0 .. MAX
         tmp->Next_PCB->Next_PCB = NULL;
         tmp = tmp->Next_PCB;
     }
@@ -109,7 +112,7 @@ main(int argc, char *argv[])
         }
 
         PrintQ(RQ);
-        sleep(1);
+        //sleep(1);
 
     }
 }

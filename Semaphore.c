@@ -59,7 +59,7 @@ void wait(semaphore *sem, PCB *process)
     //place PCB at tail of semaphore queue
     printf(", and was blocked.\n");
     SaveState(&process);
-    printf("saved\n");
+    //printf("saved\n");
     push(&sem, process);
 }
 
@@ -71,16 +71,17 @@ void signal(semaphore *sem, int PID)
     }
     else
     {
+        Forks[ACC]->count++;
         printf("Philosopher %d called signal on fork semaphore %d", PID, ACC);
     }
 
-    sem->count += 1;
+    //sem->count += 1;
     int i;
-    printf("Fork Counts:\n");
+    /*printf("Fork Counts:\n");
     for(i = 0; i < 5; i++)
     {
         printf("%d\n", Forks[i]->count);
-    }
+    }*/
 
     if(sem->count <= 0)
     {
