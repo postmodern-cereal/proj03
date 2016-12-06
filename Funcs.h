@@ -11,7 +11,7 @@ int ExecuteProc(PCB *CurrentProc);
 void RestoreState(PCB *NextProc);
 void SaveState(PCB **PrevProc);
 
-void LoadProgram(int PID, PCB **tmp);
+void LoadProgram(int PID, char *fileName, PCB **tmp);
 
 int parseOp1 (char *IR);
 int parseOp2 (char *IR);

@@ -14,13 +14,13 @@
 
 int i;
 
-void LoadProgram(int PID, PCB **tmp)
+void LoadProgram(int PID, char *fileName, PCB **tmp)
 {
     int i, fp;
 	int program_line = 100 * PID;
 	(*tmp)->BaseReg  = program_line;
 	(*tmp)->LimitReg = program_line + 100;
-    fp = open("phil.PB", O_RDONLY); //always check the return value.
+    fp = open(fileName, O_RDONLY); //always check the return value.
     //name = "Fib.PB";
 
     //(*tmp)->programName = name;
@@ -77,9 +77,16 @@ struct PCB *GetNextProcess(struct PCB **Head)
 {
     //remove pcb at head, returns pointer to it, updates head to point to next thing in list
     //the returned PCB will not be connected to the rest of the list in any way
-    if(Head == NULL)
+    if(*Head == NULL)
     {
         return NULL;
+    }
+    else if(*Head == RQT)
+    {
+        PCB *tmp = *Head;
+        *Head = NULL;
+        RQT = NULL;
+        return tmp;
     }
     struct PCB *tmp = *Head;
     *Head = (*Head)->Next_PCB;
@@ -90,6 +97,23 @@ struct PCB *GetNextProcess(struct PCB **Head)
 void MvToTail(struct PCB *Current, struct PCB **RQT)
 {
     //since current is not connected to the rest of the queue in any way, we can just stick it on the end
+    if(RQ == NULL)
+    {
+        if(*RQT == NULL)
+        {
+            *RQT = Current;
+            (*RQT)->Next_PCB = NULL;
+            RQ = *RQT;
+        }
+        else
+        {
+            RQ = (*RQT);
+            (*RQT)->Next_PCB = Current;
+            *RQT = (*RQT)->Next_PCB;
+            (*RQT)->Next_PCB = NULL;
+            RQ->Next_PCB = *RQT;
+        }
+    }
     (*RQT)->Next_PCB = Current;
     *RQT = (*RQT)->Next_PCB;
     (*RQT)->Next_PCB = NULL;
@@ -114,9 +138,8 @@ int ExecuteProc(struct PCB *CurrentProc)
     //effective address = PC + BAR
     //time slice = IC
     //return 1 if process terminates, 0 if not yet terminated
-    printf("Process with PID %d ready to begin execution of program ", CurrentProc->PID);
-    printf("%s", CurrentProc->programName);
-    printf(" and has time slice of %d\n", CurrentProc->PID, CurrentProc->IC);
+    printf("Philosopher %d is ready to begin execution", CurrentProc->PID);
+    printf(" and has time slice of %d\n\n", CurrentProc->IC);
     int IC = CurrentProc->IC;
     while (IC > 0)
 	{
@@ -216,15 +239,17 @@ int ExecuteProc(struct PCB *CurrentProc)
         IC--;
         printf("\n");
     }
-    printf("\n\n\n");
+
     if(IC == 0)
     {
         printf("Process %d completed time slice. Placing at tail of ready queue.\n", CurrentProc->PID);
         //place at tail
+        printf("\n\n\n");
         return 0;
     }
     else //we were blocked
     {
+        printf("\n\n\n");
         return -1;
     }
 }
@@ -500,7 +525,6 @@ void storeToReg(int regNum, int toStore)
 
 void grabFork(int registerNum, PCB *current, int *IC)
 {
-    printf("ACC is %d\n", ACC);
     if(getDataReg(registerNum) == 0)
     {
         wait(Forks[ACC], current);
@@ -512,6 +536,10 @@ void grabFork(int registerNum, PCB *current, int *IC)
     else
     {
         wait(Doorman, current);
+        if(Doorman->count < 0)
+        {
+            *IC = -10;
+        }
     }
 }
 
@@ -524,7 +552,6 @@ void giveFork(int registerNum, PCB *current, int PID)
     }
     else
     {
-        printf("Doorman\n");
         signal(Doorman, current->PID);
     }
 }
@@ -1119,6 +1146,7 @@ void OP36(char *IR, int *IC, PCB *current)
     //for getPID, OP2 indicates which reg to store PID into
 
     //step 1: what call are we making?
+    PC++; //we have to increment here in case we get blocked
     int callNo = getDataReg(parseOp1Reg(IR));
     int reg = parseOp2Reg(IR);
     //now we know what call we're making
@@ -1128,6 +1156,7 @@ void OP36(char *IR, int *IC, PCB *current)
     {
         printf("%d\n", Forks[i]->count);
     }
+    printf("Doorman: %d\n\n", Doorman->count);
 
     switch (callNo)
     {
@@ -1140,7 +1169,7 @@ void OP36(char *IR, int *IC, PCB *current)
             break;
 
         case 2:
-            printf("Philosopher %d has made a getpid system call\n", current->PID);
+            printf("Philosopher %d has made a getpid system call\n\n", current->PID);
             int tmp = current->PID;
             storeToReg(reg, tmp); //getPID
             break;
@@ -1150,7 +1179,7 @@ void OP36(char *IR, int *IC, PCB *current)
             exit(0);
     }
 
-    PC++;
+    //PC++;
 }
 
 void OP37(char *IR)
@@ -1158,7 +1187,7 @@ void OP37(char *IR)
     //op1 contains dividend
     int dividend = getDataReg(parseOp1Reg(IR));
     int divisor = getDataReg(parseOp2Reg(IR));
-    printf("Modulo operation: %d \% %d \n", dividend, divisor);
+    printf("Modulo operation: %d %% %d \n", dividend, divisor);
     ACC = dividend % divisor;
     //op2 contains divisor
     //results stored in ACC

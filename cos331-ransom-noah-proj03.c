@@ -14,9 +14,40 @@
 
 main(int argc, char *argv[])
 {
+    int timeSlice = 1;
+    char *fileName;
+    //argv[1] is what version to return
+    //0 is guaranteed no deadlock
+    //1 is guaranteed deadlock
+    //2 is random between 1 and 10
+    //3 is random between 1 and 10 with doorman
     //timeslice is length of program
-    int timeSlice = 20;
-    int i = 0;
+    int variant = (int)(*argv[1] - 48);
+    srand(time(NULL));
+    switch(variant)
+    {
+        case 0: timeSlice = 20;
+            fileName = "Philosophers.PB";
+            break;
+
+        case 1: timeSlice = 5;
+            fileName = "Philosophers.PB";
+            break;
+
+        case 2: timeSlice = (rand() % 10) + 1;
+            fileName = "Philosophers.PB";
+            break;
+
+        case 3: timeSlice = 7;//(rand() % 10 + 1);
+            fileName = "PhilosophersWithDoorman.PB";
+            break;
+
+        default: timeSlice = 20;
+            fileName = "Philosophers.PB";
+            break;
+    }
+
+    int i;
     PC = 0;
     //must set PC to 0 because headers are bitching
     //if queue empty then we reached a deadlock
@@ -40,7 +71,7 @@ main(int argc, char *argv[])
     {
         tmp->Next_PCB = (struct PCB *) malloc (sizeof (struct PCB));
         tmp->Next_PCB->PID = i;
-        tmp->Next_PCB->IC = timeSlice; //(rand() % 10) + 1; //rand returns 0 .. MAX
+        tmp->Next_PCB->IC = timeSlice;  //rand returns 0 .. MAX
         tmp->Next_PCB->Next_PCB = NULL;
         tmp = tmp->Next_PCB;
     }
@@ -51,7 +82,7 @@ main(int argc, char *argv[])
 	tmp = RQ;
 	for (i = 0; i < 5; i++)
 	{
-	    LoadProgram( i, &tmp);
+	    LoadProgram( i, fileName, &tmp);
 		printf("LimitReg = %d. BaseReg = %d. IC = %d\n",tmp->LimitReg, tmp->BaseReg, tmp->IC);
 		//tmp->IC = i + 2;
 		tmp = tmp->Next_PCB;
@@ -72,6 +103,7 @@ main(int argc, char *argv[])
         {
             printf("%d\n", Forks[i]->count);
         }
+        printf("Doorman: %d\n\n", Doorman->count);
 
 		int Completed = ExecuteProc(Current);
         if (Completed == 1)
@@ -112,7 +144,7 @@ main(int argc, char *argv[])
         }
 
         PrintQ(RQ);
-        //sleep(1);
+        sleep(1);
 
     }
 }

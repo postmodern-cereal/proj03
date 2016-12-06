@@ -40,26 +40,32 @@ void push(semaphore **sem, PCB *process)
 
 void wait(semaphore *sem, PCB *process)
 {
+    sem->count--;
     if(sem == Doorman)
     {
-        printf("Doorman\n");
-        //print the doorman stuff
+        printf("Philosopher %d called wait on the doorman semaphore", process->PID);
+        //print the doorman stuffonot blockednot blocked
+        if(sem->count >= 0)
+        {
+            printf(", and was allowed to enter the dining room.\n\n");
+            return;
+        }
+        printf(", and was not allowed to enter the dining room.\n\n");
     }
     else
     {
-        printf("Philosopher %d called wait on fork semaphore %d",process->PID, ACC);
+        printf("Philosopher %d called wait on fork semaphore %d", process->PID, ACC);
+        if(sem->count >= 0)
+        {
+            printf(", and was not blocked.\n\n");
+            return;
+        }
+        printf(", and was blocked.\n\n");
     }
 
-    sem->count--;
-    if(sem->count >= 0)
-    {
-        printf(", and was not blocked.\n");
-        return;
-    }
     //place PCB at tail of semaphore queue
-    printf(", and was blocked.\n");
+
     SaveState(&process);
-    //printf("saved\n");
     push(&sem, process);
 }
 
@@ -68,33 +74,38 @@ void signal(semaphore *sem, int PID)
     if(sem == Doorman)
     {
         //print the doorman stuff
+        Doorman->count++;
+        printf("Philosopher %d called signal on the doorman semaphore", PID);
+        if(sem->count <= 0)
+        {
+            //take next thing off sem queue and put on ready queue
+            PCB *tmp = pop(&sem);
+            printf(", and Philosopher %d was allowed to enter the dining room.\n", tmp->PID);
+            MvToTail(tmp, &RQT); //puts it on the tail of the ready queue
+        }
+        else
+        {
+            printf(".\n\n");
+        }
     }
     else
     {
         Forks[ACC]->count++;
         printf("Philosopher %d called signal on fork semaphore %d", PID, ACC);
-    }
 
-    //sem->count += 1;
-    int i;
-    /*printf("Fork Counts:\n");
-    for(i = 0; i < 5; i++)
-    {
-        printf("%d\n", Forks[i]->count);
-    }*/
+        if(sem->count <= 0)
+        {
+            //take next thing off sem queue and put on ready queue
+            PCB *tmp = pop(&sem);
+            printf(", and Philosopher %d was unblocked.\n\n", tmp->PID);
+            MvToTail(tmp, &RQT); //puts it on the tail of the ready queue
+        }
 
-    if(sem->count <= 0)
-    {
-        //take next thing off sem queue and put on ready queue
-        PCB *tmp = pop(&sem);
-        printf(", and Philosopher %d was unblocked.\n", tmp->PID);
-        MvToTail(tmp, &RQT); //puts it on the tail of the ready queue
+        else
+        {
+            printf(".\n\n");
+        }
     }
-    else
-    {
-        printf(".\n");
-    }
-    //return sem->count;
 }
 
 //just some test code
